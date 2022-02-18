@@ -16,11 +16,12 @@ type Config struct {
 }
 
 type Client struct {
-	baseURL   string
-	apiToken  string
-	headers   http.Header
-	http      *http.Client
-	CustomDNS CustomDNSer
+	baseURL  string
+	apiToken string
+	headers  http.Header
+	http     *http.Client
+	DNS      CustomDNS
+	CNAME    CustomCNAME
 }
 
 // New returns a new Pi-Hole client
@@ -54,7 +55,8 @@ func New(config Config) *Client {
 		headers:  headers,
 	}
 
-	client.CustomDNS = &customDNS{client: client}
+	client.DNS = &customDNS{client: client}
+	client.CNAME = &customCNAME{client: client}
 
 	return client
 }

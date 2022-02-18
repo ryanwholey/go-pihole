@@ -3,69 +3,74 @@ package pihole
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 )
 
-type CustomDNSer interface {
+type CustomDNS interface {
 	// List all the policies for a given organization
-	List(ctx context.Context) (CustomDNSList, error)
+	List(ctx context.Context) (DNSRecordList, error)
 
 	// Create a policy and associate it with an organization.
-	Create(ctx context.Context, domain string, IP string) (*CustomDNS, error)
+	Create(ctx context.Context, domain string, IP string) (*DNSRecord, error)
 
 	// Read a policy by its ID.
-	Read(ctx context.Context, domain string) (*CustomDNS, error)
+	Read(ctx context.Context, domain string) (*DNSRecord, error)
 
 	// Update an existing policy.
-	Update(ctx context.Context, domain string, IP string) (*CustomDNS, error)
+	Update(ctx context.Context, domain string, IP string) (*DNSRecord, error)
 
 	// Delete a policy by its ID.
 	Delete(ctx context.Context, domain string) error
 }
 
-// policies implements Policies.
+var (
+	ErrorCustomDNSNotFound = errors.New("custom dns record not found")
+)
+
 type customDNS struct {
 	client *Client
 }
 
-type CustomDNS struct {
+type DNSRecord struct {
 	IP     string
 	Domain string
 }
 
-type CustomDNSList []CustomDNS
+type DNSRecordList []DNSRecord
 
-type CustomDNSListResponse struct {
-	Data []CustomDNSResponseObject `json:"data"`
+type dnsRecordListResponse struct {
+	Data []dnsRecordResponseObject `json:"data"`
 }
 
-type CustomDNSResponse struct {
-	Success       string `json:"success"`
+type dnsRecordResponse struct {
+	Success       bool   `json:"success"`
 	Message       string `json:"message"`
 	FTLNotRunning bool   `json:"FTLnotrunning"`
 }
 
-type CustomDNSResponseObject []string
+type dnsRecordResponseObject []string
 
-func (record CustomDNSResponseObject) ToCustomDNS() CustomDNS {
-	return CustomDNS{
+func (record dnsRecordResponseObject) toDNSRecord() DNSRecord {
+	return DNSRecord{
 		Domain: record[0],
 		IP:     record[1],
 	}
 }
 
-func (res CustomDNSListResponse) ToCustomDNSList() CustomDNSList {
-	list := make(CustomDNSList, len(res.Data))
+func (res dnsRecordListResponse) toDNSRecordList() DNSRecordList {
+	list := make(DNSRecordList, len(res.Data))
 
 	for i, record := range res.Data {
-		list[i] = record.ToCustomDNS()
+		list[i] = record.toDNSRecord()
 	}
 
 	return list
 }
 
-func (dns customDNS) List(ctx context.Context) (CustomDNSList, error) {
+// List returns a list of custom DNS records
+func (dns customDNS) List(ctx context.Context) (DNSRecordList, error) {
 	req, err := dns.client.Request(ctx, url.Values{
 		"customdns": []string{"true"},
 		"action":    []string{"get"},
@@ -81,15 +86,16 @@ func (dns customDNS) List(ctx context.Context) (CustomDNSList, error) {
 
 	defer res.Body.Close()
 
-	var resList *CustomDNSListResponse
+	var resList *dnsRecordListResponse
 	if err := json.NewDecoder(res.Body).Decode(&resList); err != nil {
 		return nil, fmt.Errorf("failed to parse customDNS list body: %w", err)
 	}
 
-	return resList.ToCustomDNSList(), nil
+	return resList.toDNSRecordList(), nil
 }
 
-func (dns customDNS) Create(ctx context.Context, domain string, IP string) (*CustomDNS, error) {
+// Create creates a custom DNS record
+func (dns customDNS) Create(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
 	req, err := dns.client.Request(ctx, url.Values{
 		"customdns": []string{"true"},
 		"action":    []string{"add"},
@@ -107,24 +113,91 @@ func (dns customDNS) Create(ctx context.Context, domain string, IP string) (*Cus
 
 	defer res.Body.Close()
 
-	var dnsRes *CustomDNSResponse
+	var dnsRes *dnsRecordResponse
 	if err := json.NewDecoder(res.Body).Decode(&dnsRes); err != nil {
 		return nil, fmt.Errorf("failed to parse customDNS response body: %w", err)
 	}
 
-	record := dnsRes.ToCustomDNS()
+	if !dnsRes.Success {
+		return nil, fmt.Errorf("failed to create DNS record %s %s : %s : %w", domain, IP, dnsRes.Message, err)
+	}
 
-	return &record, nil
+	return &DNSRecord{
+		Domain: domain,
+		IP:     IP,
+	}, nil
 }
 
-func (dns customDNS) Read(ctx context.Context, domain string) (*CustomDNS, error) {
-	return nil, nil
+// Read returns a custom DNS record by its domain name
+func (dns customDNS) Read(ctx context.Context, domain string) (*DNSRecord, error) {
+	list, err := dns.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch custom DNS records: %w", err)
+	}
+
+	for _, record := range list {
+		if record.Domain == domain {
+			return &record, nil
+		}
+	}
+
+	return nil, fmt.Errorf("%w: %s", ErrorCustomDNSNotFound, domain)
 }
 
-func (dns customDNS) Update(ctx context.Context, domain string, IP string) (*CustomDNS, error) {
-	return nil, nil
+// Update deletes and recreates a custom DNS record
+func (dns customDNS) Update(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
+	_, err := dns.Read(ctx, domain)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := dns.Delete(ctx, domain); err != nil {
+		return nil, fmt.Errorf("failed to update %s", domain)
+	}
+
+	record, err := dns.Create(ctx, domain, IP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to recreate record during update process: %w", err)
+	}
+
+	return record, nil
 }
 
+// Delete removes a custom DNS record
 func (dns customDNS) Delete(ctx context.Context, domain string) error {
+	record, err := dns.Read(ctx, domain)
+	if err != nil {
+		if errors.Is(err, ErrorCustomDNSNotFound) {
+			return nil
+		}
+		return fmt.Errorf("failed looking up custom DNS record %s for deletion: %w", domain, err)
+	}
+
+	req, err := dns.client.Request(ctx, url.Values{
+		"customdns": []string{"true"},
+		"action":    []string{"delete"},
+		"domain":    []string{domain},
+		"ip":        []string{record.IP},
+	})
+	if err != nil {
+		return err
+	}
+
+	res, err := dns.client.http.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	var delRes dnsRecordResponse
+	if err := json.NewDecoder(res.Body).Decode(&delRes); err != nil {
+		return fmt.Errorf("failed to parse custom DNS deletion response body: %w", err)
+	}
+
+	if !delRes.Success {
+		return fmt.Errorf("failed to delete custom DNS record %s: %s", domain, delRes.Message)
+	}
+
 	return nil
 }
