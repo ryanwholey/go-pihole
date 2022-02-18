@@ -9,19 +9,19 @@ import (
 )
 
 type CustomCNAME interface {
-	// List all the policies for a given organization
+	// List all CNAME records.
 	List(ctx context.Context) (CNAMERecordList, error)
 
-	// Create a policy and associate it with an organization.
+	// Create a CNAME record.
 	Create(ctx context.Context, domain string, target string) (*CNAMERecord, error)
 
-	// Read a policy by its ID.
+	// Read a CNAME record by its domain.
 	Read(ctx context.Context, domain string) (*CNAMERecord, error)
 
-	// Update an existing policy.
+	// Update an existing CNAME record.
 	Update(ctx context.Context, domain string, IP string) (*CNAMERecord, error)
 
-	// Delete a policy by its ID.
+	// Delete a CNAME record by its domain.
 	Delete(ctx context.Context, domain string) error
 }
 

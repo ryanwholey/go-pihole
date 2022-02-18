@@ -9,19 +9,19 @@ import (
 )
 
 type CustomDNS interface {
-	// List all the policies for a given organization
+	// List all DNS records.
 	List(ctx context.Context) (DNSRecordList, error)
 
-	// Create a policy and associate it with an organization.
+	// Create a DNS record.
 	Create(ctx context.Context, domain string, IP string) (*DNSRecord, error)
 
-	// Read a policy by its ID.
+	// Read a DNS record by its domain.
 	Read(ctx context.Context, domain string) (*DNSRecord, error)
 
-	// Update an existing policy.
+	// Update an existing DNS record.
 	Update(ctx context.Context, domain string, IP string) (*DNSRecord, error)
 
-	// Delete a policy by its ID.
+	// Delete a DNS record by its domain.
 	Delete(ctx context.Context, domain string) error
 }
 
