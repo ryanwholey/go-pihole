@@ -61,24 +61,6 @@ func New(config Config) *Client {
 	return client
 }
 
-// Get returns a new get request
-func (c Client) Get(ctx context.Context, vals url.Values) (*http.Request, error) {
-	vals.Set("auth", c.apiToken)
-
-	url := fmt.Sprintf("%s?%s", c.baseURL, vals.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, header := range c.headers {
-		req.Header[key] = header
-	}
-
-	return req, nil
-}
-
 func (c Client) Request(ctx context.Context, vals url.Values) (*http.Request, error) {
 	vals.Set("auth", c.apiToken)
 
