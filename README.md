@@ -1,2 +1,3 @@
 # go-pihole
-A Golang Pi-hole client
+
+A Golang Pi-Hole client
