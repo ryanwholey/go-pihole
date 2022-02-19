@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 type Config struct {
@@ -31,7 +33,7 @@ func New(config Config) *Client {
 
 	baseURL = fmt.Sprintf("%s/admin/api.php", baseURL)
 
-	httpClient := &http.Client{}
+	httpClient := retryablehttp.NewClient().StandardClient()
 	if config.HttpClient != nil {
 		httpClient = config.HttpClient
 	}
