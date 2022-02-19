@@ -25,6 +25,7 @@ type Client struct {
 	http       *http.Client
 	LocalDNS   LocalDNS
 	LocalCNAME LocalCNAME
+	AdBlocker  AdBlocker
 }
 
 // New returns a new Pi-hole client
@@ -56,6 +57,7 @@ func New(config Config) *Client {
 
 	client.LocalDNS = &localDNS{client: client}
 	client.LocalCNAME = &localCNAME{client: client}
+	client.AdBlocker = &adBlocker{client: client}
 
 	return client
 }
