@@ -2,6 +2,7 @@ package pihole
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,21 +17,17 @@ type Config struct {
 }
 
 type Client struct {
-	baseURL  string
-	apiToken string
-	headers  http.Header
-	http     *http.Client
-	DNS      CustomDNS
-	CNAME    CustomCNAME
+	baseURL    string
+	apiToken   string
+	headers    http.Header
+	http       *http.Client
+	LocalDNS   LocalDNS
+	LocalCNAME LocalCNAME
 }
 
-// New returns a new Pi-Hole client
+// New returns a new Pi-hole client
 func New(config Config) *Client {
-	baseURL := config.BaseURL
-
-	if strings.HasSuffix(baseURL, "/") {
-		baseURL = strings.TrimSuffix(baseURL, "/")
-	}
+	baseURL := strings.TrimSuffix(config.BaseURL, "/")
 
 	baseURL = fmt.Sprintf("%s/admin/api.php", baseURL)
 
@@ -55,10 +52,23 @@ func New(config Config) *Client {
 		headers:  headers,
 	}
 
-	client.DNS = &customDNS{client: client}
-	client.CNAME = &customCNAME{client: client}
+	client.LocalDNS = &localDNS{client: client}
+	client.LocalCNAME = &localCNAME{client: client}
 
 	return client
+}
+
+var ErrClientValidation = errors.New("invalid client configuration")
+
+func (c Client) Validate() error {
+	if c.apiToken == "" {
+		return fmt.Errorf("%w: apiToken is empty", ErrClientValidation)
+	}
+	if c.baseURL == "/admin/api.php" {
+		return fmt.Errorf("%w: baseURL is empty", ErrClientValidation)
+	}
+
+	return nil
 }
 
 func (c Client) Request(ctx context.Context, vals url.Values) (*http.Request, error) {

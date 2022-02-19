@@ -8,15 +8,15 @@ import (
 	"net/url"
 )
 
-type CustomDNS interface {
+type LocalDNS interface {
 	// List all DNS records.
 	List(ctx context.Context) (DNSRecordList, error)
 
 	// Create a DNS record.
 	Create(ctx context.Context, domain string, IP string) (*DNSRecord, error)
 
-	// Read a DNS record by its domain.
-	Read(ctx context.Context, domain string) (*DNSRecord, error)
+	// Get a DNS record by its domain.
+	Get(ctx context.Context, domain string) (*DNSRecord, error)
 
 	// Update an existing DNS record.
 	Update(ctx context.Context, domain string, IP string) (*DNSRecord, error)
@@ -26,10 +26,10 @@ type CustomDNS interface {
 }
 
 var (
-	ErrorCustomDNSNotFound = errors.New("custom dns record not found")
+	ErrorLocalDNSNotFound = errors.New("local dns record not found")
 )
 
-type customDNS struct {
+type localDNS struct {
 	client *Client
 }
 
@@ -70,7 +70,7 @@ func (res dnsRecordListResponse) toDNSRecordList() DNSRecordList {
 }
 
 // List returns a list of custom DNS records
-func (dns customDNS) List(ctx context.Context) (DNSRecordList, error) {
+func (dns localDNS) List(ctx context.Context) (DNSRecordList, error) {
 	req, err := dns.client.Request(ctx, url.Values{
 		"customdns": []string{"true"},
 		"action":    []string{"get"},
@@ -95,7 +95,7 @@ func (dns customDNS) List(ctx context.Context) (DNSRecordList, error) {
 }
 
 // Create creates a custom DNS record
-func (dns customDNS) Create(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
+func (dns localDNS) Create(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
 	req, err := dns.client.Request(ctx, url.Values{
 		"customdns": []string{"true"},
 		"action":    []string{"add"},
@@ -128,8 +128,8 @@ func (dns customDNS) Create(ctx context.Context, domain string, IP string) (*DNS
 	}, nil
 }
 
-// Read returns a custom DNS record by its domain name
-func (dns customDNS) Read(ctx context.Context, domain string) (*DNSRecord, error) {
+// Get returns a custom DNS record by its domain name
+func (dns localDNS) Get(ctx context.Context, domain string) (*DNSRecord, error) {
 	list, err := dns.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch custom DNS records: %w", err)
@@ -141,12 +141,12 @@ func (dns customDNS) Read(ctx context.Context, domain string) (*DNSRecord, error
 		}
 	}
 
-	return nil, fmt.Errorf("%w: %s", ErrorCustomDNSNotFound, domain)
+	return nil, fmt.Errorf("%w: %s", ErrorLocalDNSNotFound, domain)
 }
 
 // Update deletes and recreates a custom DNS record
-func (dns customDNS) Update(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
-	_, err := dns.Read(ctx, domain)
+func (dns localDNS) Update(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
+	_, err := dns.Get(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
@@ -164,10 +164,10 @@ func (dns customDNS) Update(ctx context.Context, domain string, IP string) (*DNS
 }
 
 // Delete removes a custom DNS record
-func (dns customDNS) Delete(ctx context.Context, domain string) error {
-	record, err := dns.Read(ctx, domain)
+func (dns localDNS) Delete(ctx context.Context, domain string) error {
+	record, err := dns.Get(ctx, domain)
 	if err != nil {
-		if errors.Is(err, ErrorCustomDNSNotFound) {
+		if errors.Is(err, ErrorLocalDNSNotFound) {
 			return nil
 		}
 		return fmt.Errorf("failed looking up custom DNS record %s for deletion: %w", domain, err)
