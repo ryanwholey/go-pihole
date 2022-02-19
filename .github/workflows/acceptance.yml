@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - '**.md'
 jobs:
-  test:
+  acceptance:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

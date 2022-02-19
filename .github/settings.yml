@@ -17,4 +17,13 @@ repository:
 
   name: go-pihole
   description: A Golang Pi-hole client
-  topics: Pi-hole, Golang
+  topics: pihole, golang
+
+branches:
+  - name: main
+    protection:
+      required_status_checks:
+        contexts:
+          - test
+          - lint
+          - acceptance
