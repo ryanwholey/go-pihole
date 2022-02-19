@@ -8,15 +8,15 @@ import (
 	"net/url"
 )
 
-type CustomCNAME interface {
+type LocalCNAME interface {
 	// List all CNAME records.
 	List(ctx context.Context) (CNAMERecordList, error)
 
 	// Create a CNAME record.
 	Create(ctx context.Context, domain string, target string) (*CNAMERecord, error)
 
-	// Read a CNAME record by its domain.
-	Read(ctx context.Context, domain string) (*CNAMERecord, error)
+	// Get a CNAME record by its domain.
+	Get(ctx context.Context, domain string) (*CNAMERecord, error)
 
 	// Update an existing CNAME record.
 	Update(ctx context.Context, domain string, IP string) (*CNAMERecord, error)
@@ -26,10 +26,10 @@ type CustomCNAME interface {
 }
 
 var (
-	ErrorCustomCNAMENotFound = errors.New("custom CNAME record not found")
+	ErrorLocalCNAMENotFound = errors.New("local CNAME record not found")
 )
 
-type customCNAME struct {
+type localCNAME struct {
 	client *Client
 }
 
@@ -70,7 +70,7 @@ func (record cnameRecordResponseObject) toCNAMERecord() CNAMERecord {
 type CNAMERecordList []CNAMERecord
 
 // List returns all CNAME records
-func (cname customCNAME) List(ctx context.Context) (CNAMERecordList, error) {
+func (cname localCNAME) List(ctx context.Context) (CNAMERecordList, error) {
 	req, err := cname.client.Request(ctx, url.Values{
 		"customcname": []string{"true"},
 		"action":      []string{"get"},
@@ -95,7 +95,7 @@ func (cname customCNAME) List(ctx context.Context) (CNAMERecordList, error) {
 }
 
 // Create creates a CNAME record
-func (cname customCNAME) Create(ctx context.Context, domain string, target string) (*CNAMERecord, error) {
+func (cname localCNAME) Create(ctx context.Context, domain string, target string) (*CNAMERecord, error) {
 	req, err := cname.client.Request(ctx, url.Values{
 		"customcname": []string{"true"},
 		"action":      []string{"add"},
@@ -128,8 +128,8 @@ func (cname customCNAME) Create(ctx context.Context, domain string, target strin
 	}, nil
 }
 
-// Read returns a CNAME record by the passed domain
-func (cname customCNAME) Read(ctx context.Context, domain string) (*CNAMERecord, error) {
+// Get returns a CNAME record by the passed domain
+func (cname localCNAME) Get(ctx context.Context, domain string) (*CNAMERecord, error) {
 	list, err := cname.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch custom CNAME records: %w", err)
@@ -141,12 +141,12 @@ func (cname customCNAME) Read(ctx context.Context, domain string) (*CNAMERecord,
 		}
 	}
 
-	return nil, fmt.Errorf("%w: %s", ErrorCustomCNAMENotFound, domain)
+	return nil, fmt.Errorf("%w: %s", ErrorLocalCNAMENotFound, domain)
 }
 
 // Update deletes and recreates a CNAME record
-func (cname customCNAME) Update(ctx context.Context, domain string, target string) (*CNAMERecord, error) {
-	_, err := cname.Read(ctx, domain)
+func (cname localCNAME) Update(ctx context.Context, domain string, target string) (*CNAMERecord, error) {
+	_, err := cname.Get(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
@@ -164,10 +164,10 @@ func (cname customCNAME) Update(ctx context.Context, domain string, target strin
 }
 
 // Delete removes a CNAME record by domain
-func (cname customCNAME) Delete(ctx context.Context, domain string) error {
-	record, err := cname.Read(ctx, domain)
+func (cname localCNAME) Delete(ctx context.Context, domain string) error {
+	record, err := cname.Get(ctx, domain)
 	if err != nil {
-		if errors.Is(err, ErrorCustomCNAMENotFound) {
+		if errors.Is(err, ErrorLocalCNAMENotFound) {
 			return nil
 		}
 		return fmt.Errorf("failed looking up CNAME record %s for deletion: %w", domain, err)
