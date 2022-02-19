@@ -18,6 +18,7 @@ func testAssertDNS(t *testing.T, c Client, expected *DNSRecord, assertErr error)
 	}
 
 	require.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, expected.Domain, actual.Domain)
 	assert.Equal(t, expected.IP, actual.IP)
