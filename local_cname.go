@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 type LocalCNAME interface {
@@ -122,10 +123,7 @@ func (cname localCNAME) Create(ctx context.Context, domain string, target string
 		return nil, fmt.Errorf("failed to create CNAME record %s %s : %s : %w", domain, target, dnsRes.Message, err)
 	}
 
-	return &CNAMERecord{
-		Domain: domain,
-		Target: target,
-	}, nil
+	return cname.Get(ctx, domain)
 }
 
 // Get returns a CNAME record by the passed domain
@@ -136,7 +134,7 @@ func (cname localCNAME) Get(ctx context.Context, domain string) (*CNAMERecord, e
 	}
 
 	for _, record := range list {
-		if record.Domain == domain {
+		if record.Domain == strings.ToLower(domain) {
 			return &record, nil
 		}
 	}
@@ -176,7 +174,7 @@ func (cname localCNAME) Delete(ctx context.Context, domain string) error {
 	req, err := cname.client.Request(ctx, url.Values{
 		"customcname": []string{"true"},
 		"action":      []string{"delete"},
-		"domain":      []string{domain},
+		"domain":      []string{record.Domain},
 		"target":      []string{record.Target},
 	})
 	if err != nil {
