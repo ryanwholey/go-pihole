@@ -17,4 +17,3 @@ jobs:
         env:
           GOPROXY: proxy.golang.org
         run: go list -m "github.com/ryanwholey/go-pihole@${GITHUB_REF#refs/*/}"
- 
