@@ -49,6 +49,8 @@ func TestClientValidation(t *testing.T) {
 func isAcceptance(t *testing.T) {
 	if os.Getenv("TEST_ACC") != "1" {
 		t.Skip("skipping acceptance test")
+	} else {
+		accPreflghtCheck(t)
 	}
 }
 

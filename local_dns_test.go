@@ -32,7 +32,6 @@ func cleanupDNS(t *testing.T, c Client, domain string) {
 func TestLocalDNS(t *testing.T) {
 	t.Run("Test create a DNS record", func(t *testing.T) {
 		isAcceptance(t)
-		accPreflghtCheck(t)
 
 		c := newTestClient()
 
@@ -52,7 +51,6 @@ func TestLocalDNS(t *testing.T) {
 
 	t.Run("Test update a DNS record", func(t *testing.T) {
 		isAcceptance(t)
-		accPreflghtCheck(t)
 
 		c := newTestClient()
 
@@ -74,7 +72,6 @@ func TestLocalDNS(t *testing.T) {
 
 	t.Run("Test delete a DNS record", func(t *testing.T) {
 		isAcceptance(t)
-		accPreflghtCheck(t)
 
 		c := newTestClient()
 		ctx := context.Background()

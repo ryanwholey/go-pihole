@@ -32,7 +32,6 @@ func cleanupCNAME(t *testing.T, c Client, domain string) {
 func TestLocalCNAME(t *testing.T) {
 	t.Run("Test create a CNAME record", func(t *testing.T) {
 		isAcceptance(t)
-		accPreflghtCheck(t)
 
 		c := newTestClient()
 
@@ -52,7 +51,6 @@ func TestLocalCNAME(t *testing.T) {
 
 	t.Run("Test update a CNAME record", func(t *testing.T) {
 		isAcceptance(t)
-		accPreflghtCheck(t)
 
 		c := newTestClient()
 
@@ -74,7 +72,6 @@ func TestLocalCNAME(t *testing.T) {
 
 	t.Run("Test delete a CNAME record", func(t *testing.T) {
 		isAcceptance(t)
-		accPreflghtCheck(t)
 
 		c := newTestClient()
 		ctx := context.Background()
