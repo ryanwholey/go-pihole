@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 type LocalDNS interface {
@@ -122,10 +123,7 @@ func (dns localDNS) Create(ctx context.Context, domain string, IP string) (*DNSR
 		return nil, fmt.Errorf("failed to create DNS record %s %s : %s : %w", domain, IP, dnsRes.Message, err)
 	}
 
-	return &DNSRecord{
-		Domain: domain,
-		IP:     IP,
-	}, nil
+	return dns.Get(ctx, domain)
 }
 
 // Get returns a custom DNS record by its domain name
@@ -136,7 +134,7 @@ func (dns localDNS) Get(ctx context.Context, domain string) (*DNSRecord, error) 
 	}
 
 	for _, record := range list {
-		if record.Domain == domain {
+		if record.Domain == strings.ToLower(domain) {
 			return &record, nil
 		}
 	}
@@ -146,21 +144,21 @@ func (dns localDNS) Get(ctx context.Context, domain string) (*DNSRecord, error) 
 
 // Update deletes and recreates a custom DNS record
 func (dns localDNS) Update(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
-	_, err := dns.Get(ctx, domain)
+	record, err := dns.Get(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := dns.Delete(ctx, domain); err != nil {
-		return nil, fmt.Errorf("failed to update %s", domain)
+	if err := dns.Delete(ctx, record.Domain); err != nil {
+		return nil, fmt.Errorf("failed to update %s", record.Domain)
 	}
 
-	record, err := dns.Create(ctx, domain, IP)
+	updated, err := dns.Create(ctx, record.Domain, IP)
 	if err != nil {
 		return nil, fmt.Errorf("failed to recreate record during update process: %w", err)
 	}
 
-	return record, nil
+	return updated, nil
 }
 
 // Delete removes a custom DNS record
@@ -176,7 +174,7 @@ func (dns localDNS) Delete(ctx context.Context, domain string) error {
 	req, err := dns.client.Request(ctx, url.Values{
 		"customdns": []string{"true"},
 		"action":    []string{"delete"},
-		"domain":    []string{domain},
+		"domain":    []string{record.Domain},
 		"ip":        []string{record.IP},
 	})
 	if err != nil {
