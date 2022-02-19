@@ -3,7 +3,6 @@ package pihole
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
@@ -60,9 +59,6 @@ func isUnit(t *testing.T) {
 }
 
 func accPreflghtCheck(t *testing.T) {
-	log.Println("os.Getenv(\"PIHOLE_API_TOKEN\")")
-	log.Println(os.Getenv("PIHOLE_API_TOKEN"))
-
 	require.NotEmpty(t, os.Getenv("PIHOLE_URL"), "PIHOLE_URL must be set for acceptance tests")
 	require.NotEmpty(t, os.Getenv("PIHOLE_API_TOKEN"), "PIHOLE_API_TOKEN must be set for acceptance tests")
 }
