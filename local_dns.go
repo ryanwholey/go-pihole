@@ -19,9 +19,6 @@ type LocalDNS interface {
 	// Get a DNS record by its domain.
 	Get(ctx context.Context, domain string) (*DNSRecord, error)
 
-	// Update an existing DNS record.
-	Update(ctx context.Context, domain string, IP string) (*DNSRecord, error)
-
 	// Delete a DNS record by its domain.
 	Delete(ctx context.Context, domain string) error
 }
@@ -140,25 +137,6 @@ func (dns localDNS) Get(ctx context.Context, domain string) (*DNSRecord, error) 
 	}
 
 	return nil, fmt.Errorf("%w: %s", ErrorLocalDNSNotFound, domain)
-}
-
-// Update deletes and recreates a custom DNS record
-func (dns localDNS) Update(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
-	record, err := dns.Get(ctx, domain)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := dns.Delete(ctx, record.Domain); err != nil {
-		return nil, fmt.Errorf("failed to update %s", record.Domain)
-	}
-
-	updated, err := dns.Create(ctx, record.Domain, IP)
-	if err != nil {
-		return nil, fmt.Errorf("failed to recreate record during update process: %w", err)
-	}
-
-	return updated, nil
 }
 
 // Delete removes a custom DNS record

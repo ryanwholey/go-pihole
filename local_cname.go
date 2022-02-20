@@ -19,9 +19,6 @@ type LocalCNAME interface {
 	// Get a CNAME record by its domain.
 	Get(ctx context.Context, domain string) (*CNAMERecord, error)
 
-	// Update an existing CNAME record.
-	Update(ctx context.Context, domain string, IP string) (*CNAMERecord, error)
-
 	// Delete a CNAME record by its domain.
 	Delete(ctx context.Context, domain string) error
 }
@@ -140,25 +137,6 @@ func (cname localCNAME) Get(ctx context.Context, domain string) (*CNAMERecord, e
 	}
 
 	return nil, fmt.Errorf("%w: %s", ErrorLocalCNAMENotFound, domain)
-}
-
-// Update deletes and recreates a CNAME record
-func (cname localCNAME) Update(ctx context.Context, domain string, target string) (*CNAMERecord, error) {
-	_, err := cname.Get(ctx, domain)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := cname.Delete(ctx, domain); err != nil {
-		return nil, fmt.Errorf("failed to update %s", domain)
-	}
-
-	record, err := cname.Create(ctx, domain, target)
-	if err != nil {
-		return nil, fmt.Errorf("failed to recreate record during update process: %w", err)
-	}
-
-	return record, nil
 }
 
 // Delete removes a CNAME record by domain

@@ -49,27 +49,6 @@ func TestLocalCNAME(t *testing.T) {
 		}, nil)
 	})
 
-	t.Run("Test update a CNAME record", func(t *testing.T) {
-		isAcceptance(t)
-
-		c := newTestClient()
-
-		domain := fmt.Sprintf("test.%s", randomID())
-
-		record, err := c.LocalCNAME.Create(context.Background(), domain, "domain.com")
-		require.NoError(t, err)
-		defer cleanupCNAME(t, c, record.Domain)
-
-		updated, err := c.LocalCNAME.Update(context.Background(), record.Domain, "domain-2.com")
-		require.NoError(t, err)
-
-		testAssertCNAME(t, c, updated, nil)
-		testAssertCNAME(t, c, &CNAMERecord{
-			Domain: record.Domain,
-			Target: "domain-2.com",
-		}, nil)
-	})
-
 	t.Run("Test delete a CNAME record", func(t *testing.T) {
 		isAcceptance(t)
 

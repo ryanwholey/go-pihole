@@ -49,27 +49,6 @@ func TestLocalDNS(t *testing.T) {
 		}, nil)
 	})
 
-	t.Run("Test update a DNS record", func(t *testing.T) {
-		isAcceptance(t)
-
-		c := newTestClient()
-
-		domain := fmt.Sprintf("test.%s", randomID())
-
-		record, err := c.LocalDNS.Create(context.Background(), domain, "127.0.0.1")
-		require.NoError(t, err)
-		defer cleanupDNS(t, c, record.Domain)
-
-		updated, err := c.LocalDNS.Update(context.Background(), record.Domain, "127.0.0.2")
-		require.NoError(t, err)
-
-		testAssertDNS(t, c, updated, nil)
-		testAssertDNS(t, c, &DNSRecord{
-			Domain: record.Domain,
-			IP:     "127.0.0.2",
-		}, nil)
-	})
-
 	t.Run("Test delete a DNS record", func(t *testing.T) {
 		isAcceptance(t)
 
