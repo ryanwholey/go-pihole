@@ -25,11 +25,6 @@ jobs:
         with:
           go-version: 1.17
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_wrapper: false
-
       - name: Start pihole
         run: docker-compose up -d
 
