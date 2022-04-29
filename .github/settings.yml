@@ -28,7 +28,6 @@ branches:
         contexts:
           - test
           - lint
-          - acceptance
       enforce_admins: false
       required_linear_history: true
       restrictions: null
