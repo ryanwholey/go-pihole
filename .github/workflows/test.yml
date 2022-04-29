@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   test:
-    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,3 +40,37 @@ jobs:
 
       - name: Test
         run: go test -race -v ./...
+
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    env:
+      PIHOLE_URL: http://localhost:8080
+      PIHOLE_API_TOKEN: 7b3d979ca8330a94fa7e9e1b466d8b99e0bcdea1ec90596c0dcc8d7ef6b4300c
+
+    strategy:
+      matrix:
+        tag:
+          - "latest"
+          - "nightly"
+          - "2022.02.1"
+          - "2022.01.1"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Start Pi-hole
+        shell: bash
+        run: |-
+          docker-compose -f docker-compose.yml -f <(echo '{"services": {"pihole":{"image": "pihole/pihole:${{ matrix.tag }}"}}}') up -d --build
+
+      - name: Run acceptance tests
+        env:
+          TEST_ACC: "1"
+        run: go test -v ./...
