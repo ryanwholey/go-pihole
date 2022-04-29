@@ -51,6 +51,7 @@ jobs:
           - "latest"
           - "nightly"
           - "2022.02.1"
+          - "2022.04.3"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
