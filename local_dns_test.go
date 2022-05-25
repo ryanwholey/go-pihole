@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testAssertDNS(t *testing.T, c Client, expected *DNSRecord, assertErr error) {
+func testAssertDNS(t *testing.T, c *Client, expected *DNSRecord, assertErr error) {
 	actual, err := c.LocalDNS.Get(context.TODO(), expected.Domain)
 	if assertErr != nil {
 		assert.ErrorAs(t, err, assertErr)
@@ -23,7 +23,7 @@ func testAssertDNS(t *testing.T, c Client, expected *DNSRecord, assertErr error)
 	assert.Equal(t, expected.IP, actual.IP)
 }
 
-func cleanupDNS(t *testing.T, c Client, domain string) {
+func cleanupDNS(t *testing.T, c *Client, domain string) {
 	if err := c.LocalDNS.Delete(context.TODO(), domain); err != nil {
 		log.Printf("Failed to clean up domain record: %s\n", domain)
 	}
@@ -33,7 +33,7 @@ func TestLocalDNS(t *testing.T) {
 	t.Run("Test create a DNS record", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 
 		domain := fmt.Sprintf("test.%s", randomID())
 
@@ -52,7 +52,7 @@ func TestLocalDNS(t *testing.T) {
 	t.Run("Test delete a DNS record", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 		ctx := context.Background()
 
 		domain := fmt.Sprintf("test.%s", randomID())

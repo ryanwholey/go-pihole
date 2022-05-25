@@ -30,7 +30,7 @@ type Client struct {
 }
 
 // New returns a new Pi-hole client
-func New(config Config) *Client {
+func New(config Config) (*Client, error) {
 	baseURL := strings.TrimSuffix(config.BaseURL, "/")
 
 	baseURL = fmt.Sprintf("%s/admin/api.php", baseURL)
@@ -61,12 +61,16 @@ func New(config Config) *Client {
 	client.AdBlocker = &adBlocker{client: client}
 	client.Version = &version{client: client}
 
-	return client
+	if err := client.validate(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 var ErrClientValidation = errors.New("invalid client configuration")
 
-func (c Client) Validate() error {
+func (c Client) validate() error {
 	if c.apiToken == "" {
 		return fmt.Errorf("%w: apiToken is empty", ErrClientValidation)
 	}
