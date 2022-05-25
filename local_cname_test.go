@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testAssertCNAME(t *testing.T, c Client, expected *CNAMERecord, assertErr error) {
+func testAssertCNAME(t *testing.T, c *Client, expected *CNAMERecord, assertErr error) {
 	actual, err := c.LocalCNAME.Get(context.TODO(), expected.Domain)
 	if assertErr != nil {
 		assert.ErrorAs(t, err, assertErr)
@@ -23,7 +23,7 @@ func testAssertCNAME(t *testing.T, c Client, expected *CNAMERecord, assertErr er
 	assert.Equal(t, expected.Target, actual.Target)
 }
 
-func cleanupCNAME(t *testing.T, c Client, domain string) {
+func cleanupCNAME(t *testing.T, c *Client, domain string) {
 	if err := c.LocalCNAME.Delete(context.TODO(), domain); err != nil {
 		log.Printf("Failed to clean up CNAME record: %s\n", domain)
 	}
@@ -33,7 +33,7 @@ func TestLocalCNAME(t *testing.T) {
 	t.Run("Test create a CNAME record", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 
 		domain := fmt.Sprintf("test.%s", randomID())
 
@@ -52,7 +52,7 @@ func TestLocalCNAME(t *testing.T) {
 	t.Run("Test delete a CNAME record", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 		ctx := context.Background()
 
 		domain := fmt.Sprintf("test.%s", randomID())

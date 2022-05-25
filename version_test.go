@@ -12,7 +12,7 @@ func TestVersion(t *testing.T) {
 	t.Run("Fetch versions", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 
 		versions, err := c.Version.Get(context.Background())
 		require.NoError(t, err)

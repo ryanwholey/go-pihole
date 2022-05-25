@@ -12,7 +12,7 @@ func TestAdBlocker(t *testing.T) {
 	t.Run("enable ad blocker", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 		ctx := context.Background()
 
 		_, err := c.AdBlocker.Update(ctx, AdBlockerStatusOptions{
@@ -31,7 +31,7 @@ func TestAdBlocker(t *testing.T) {
 	t.Run("disable ad blocker", func(t *testing.T) {
 		isAcceptance(t)
 
-		c := newTestClient()
+		c := newTestClient(t)
 		ctx := context.Background()
 
 		_, err := c.AdBlocker.Update(ctx, AdBlockerStatusOptions{
