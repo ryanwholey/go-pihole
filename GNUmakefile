@@ -10,6 +10,3 @@ acceptance:
 
 lint:
 	golangci-lint run ./...
-
-docs:
-	tfplugindocs

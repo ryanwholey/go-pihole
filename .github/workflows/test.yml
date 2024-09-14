@@ -32,7 +32,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17
+          go-version: 1.22
 
       - name: Test
         run: go test -race -v ./...
@@ -59,12 +59,12 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17
+          go-version: 1.22
 
       - name: Start Pi-hole
         shell: bash
         run: |-
-          docker-compose -f docker-compose.yml -f <(echo '{"services": {"pihole":{"image": "pihole/pihole:${{ matrix.tag }}"}}}') up -d --build
+          docker-compose -f docker-compose.yml -f <(echo '{"services": {"pihole":{"image": "pihole/pihole:${{ matrix.tag }}"}}}') up -d
 
       - name: Run acceptance tests
         env:
