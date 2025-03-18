@@ -11,7 +11,7 @@ import "github.com/ryanwholey/go-pihole"
 
 client := pihole.New(pihole.Config{
 	BaseURL:  "http://pi.hole"
-	APIToken: "8c4e081d..."
+	Password: "token"
 })
 
 record, err := client.LocalDNS.Create(context.Background(), "my-domain.com", "127.0.0.1")
@@ -31,6 +31,6 @@ make test
 ```sh
 docker compose up -d
 export PIHOLE_URL=http://localhost:8080
-export PIHOLE_API_TOKEN=7b3d979ca8330a94fa7e9e1b466d8b99e0bcdea1ec90596c0dcc8d7ef6b4300c
+export PIHOLE_PASSWORD=test
 make acceptance
 ```

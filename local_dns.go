@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
+	"io"
+	"net/http"
 	"strings"
 )
 
@@ -39,29 +40,26 @@ type DNSRecord struct {
 type DNSRecordList []DNSRecord
 
 type dnsRecordListResponse struct {
-	Data []dnsRecordResponseObject `json:"data"`
+	Config dnsRecordConfigListResponse `json:"config"`
 }
 
-type dnsRecordResponse struct {
-	Success       bool   `json:"success"`
-	Message       string `json:"message"`
-	FTLNotRunning bool   `json:"FTLnotrunning"`
+type dnsRecordConfigListResponse struct {
+	DNS dnsRecordDNSListResponse `json:"dns"`
 }
 
-type dnsRecordResponseObject []string
-
-func (record dnsRecordResponseObject) toDNSRecord() DNSRecord {
-	return DNSRecord{
-		Domain: record[0],
-		IP:     record[1],
-	}
+type dnsRecordDNSListResponse struct {
+	Hosts []string `json:"hosts"`
 }
+
+type dnsRecordResponse struct{}
 
 func (res dnsRecordListResponse) toDNSRecordList() DNSRecordList {
-	list := make(DNSRecordList, len(res.Data))
+	list := make(DNSRecordList, len(res.Config.DNS.Hosts))
 
-	for i, record := range res.Data {
-		list[i] = record.toDNSRecord()
+	for i, record := range res.Config.DNS.Hosts {
+		entry := strings.Split(record, " ")
+
+		list[i] = DNSRecord{IP: entry[0], Domain: entry[1]}
 	}
 
 	return list
@@ -69,19 +67,10 @@ func (res dnsRecordListResponse) toDNSRecordList() DNSRecordList {
 
 // List returns a list of custom DNS records
 func (dns localDNS) List(ctx context.Context) (DNSRecordList, error) {
-	req, err := dns.client.Request(ctx, url.Values{
-		"customdns": []string{"true"},
-		"action":    []string{"get"},
-	})
+	res, err := dns.client.Get(ctx, "/api/config/dns/hosts")
 	if err != nil {
 		return nil, err
 	}
-
-	res, err := dns.client.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
 	defer res.Body.Close()
 
 	var resList *dnsRecordListResponse
@@ -94,44 +83,41 @@ func (dns localDNS) List(ctx context.Context) (DNSRecordList, error) {
 
 // Create creates a custom DNS record
 func (dns localDNS) Create(ctx context.Context, domain string, IP string) (*DNSRecord, error) {
-	req, err := dns.client.Request(ctx, url.Values{
-		"customdns": []string{"true"},
-		"action":    []string{"add"},
-		"ip":        []string{IP},
-		"domain":    []string{domain},
-	})
-	if err != nil {
-		return nil, err
-	}
+	value := fmt.Sprintf("%s%%20%s", IP, domain)
 
-	res, err := dns.client.http.Do(req)
+	res, err := dns.client.Put(ctx, fmt.Sprintf("/api/config/dns/hosts/%s", value), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	defer res.Body.Close()
 
+	if res.StatusCode != http.StatusCreated {
+		b, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("received unexpected status code %d %s", res.StatusCode, string(b))
+	}
+
 	var dnsRes *dnsRecordResponse
 	if err := json.NewDecoder(res.Body).Decode(&dnsRes); err != nil {
 		return nil, fmt.Errorf("failed to parse customDNS response body: %w", err)
 	}
 
-	if !dnsRes.Success {
-		return nil, fmt.Errorf("failed to create DNS record %s %s : %s : %w", domain, IP, dnsRes.Message, err)
-	}
+	// if !dnsRes.Success {
+	// 	return nil, fmt.Errorf("failed to create DNS record %s %s : %s : %w", domain, IP, dnsRes.Message, err)
+	// }
 
 	return dns.Get(ctx, domain)
 }
 
 // Get returns a custom DNS record by its domain name
 func (dns localDNS) Get(ctx context.Context, domain string) (*DNSRecord, error) {
-	list, err := dns.List(ctx)
+	records, err := dns.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch custom DNS records: %w", err)
 	}
 
-	for _, record := range list {
-		if record.Domain == strings.ToLower(domain) {
+	for _, record := range records {
+		if strings.EqualFold(record.Domain, domain) {
 			return &record, nil
 		}
 	}
@@ -146,33 +132,22 @@ func (dns localDNS) Delete(ctx context.Context, domain string) error {
 		if errors.Is(err, ErrorLocalDNSNotFound) {
 			return nil
 		}
+
 		return fmt.Errorf("failed looking up custom DNS record %s for deletion: %w", domain, err)
 	}
 
-	req, err := dns.client.Request(ctx, url.Values{
-		"customdns": []string{"true"},
-		"action":    []string{"delete"},
-		"domain":    []string{record.Domain},
-		"ip":        []string{record.IP},
-	})
-	if err != nil {
-		return err
-	}
+	value := fmt.Sprintf("%s%%20%s", record.IP, record.Domain)
 
-	res, err := dns.client.http.Do(req)
+	res, err := dns.client.Delete(ctx, fmt.Sprintf("/api/config/dns/hosts/%s", value))
 	if err != nil {
 		return err
 	}
 
 	defer res.Body.Close()
 
-	var delRes dnsRecordResponse
-	if err := json.NewDecoder(res.Body).Decode(&delRes); err != nil {
-		return fmt.Errorf("failed to parse custom DNS deletion response body: %w", err)
-	}
-
-	if !delRes.Success {
-		return fmt.Errorf("failed to delete custom DNS record %s: %s", domain, delRes.Message)
+	if res.StatusCode != http.StatusNoContent {
+		b, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("received unexpected status code: %d %s", res.StatusCode, string(b))
 	}
 
 	return nil
