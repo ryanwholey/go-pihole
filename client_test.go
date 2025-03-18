@@ -3,22 +3,12 @@ package pihole
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func Test(t *testing.T) {
-	fmt.Println("here")
-	c, err := New(Config{BaseURL: "http://localhost:8080"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(c)
-}
 
 func TestClientValidation(t *testing.T) {
 	t.Run("error on unset API token", func(t *testing.T) {
