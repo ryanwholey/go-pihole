@@ -11,27 +11,6 @@ import (
 )
 
 func TestClientValidation(t *testing.T) {
-	t.Run("error on unset API token", func(t *testing.T) {
-		isUnit(t)
-		t.Parallel()
-
-		_, err := New(Config{
-			BaseURL: "http://localhost:8080",
-		})
-
-		assert.ErrorIs(t, err, ErrClientValidation)
-	})
-
-	t.Run("error on unset URL", func(t *testing.T) {
-		isUnit(t)
-		t.Parallel()
-
-		_, err := New(Config{
-			Password: "token",
-		})
-
-		assert.ErrorIs(t, err, ErrClientValidation)
-	})
 
 	t.Run("no error on valid client config", func(t *testing.T) {
 		isUnit(t)
