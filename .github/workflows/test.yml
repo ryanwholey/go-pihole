@@ -43,12 +43,12 @@ jobs:
     
     env:
       PIHOLE_URL: http://localhost:8080
-      PIHOLE_API_TOKEN: 7b3d979ca8330a94fa7e9e1b466d8b99e0bcdea1ec90596c0dcc8d7ef6b4300c
+      PIHOLE_PASSWORD: test
 
     strategy:
       matrix:
         tag:
-          - "latest"    # In case theres a later than the above
+          - "2025.03.0"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
