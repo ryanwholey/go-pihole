@@ -11,27 +11,6 @@ import (
 )
 
 func TestClientValidation(t *testing.T) {
-	t.Run("error on unset API token", func(t *testing.T) {
-		isUnit(t)
-		t.Parallel()
-
-		_, err := New(Config{
-			BaseURL: "http://localhost:8080",
-		})
-
-		assert.ErrorIs(t, err, ErrClientValidation)
-	})
-
-	t.Run("error on unset URL", func(t *testing.T) {
-		isUnit(t)
-		t.Parallel()
-
-		_, err := New(Config{
-			APIToken: "token",
-		})
-
-		assert.ErrorIs(t, err, ErrClientValidation)
-	})
 
 	t.Run("no error on valid client config", func(t *testing.T) {
 		isUnit(t)
@@ -39,7 +18,7 @@ func TestClientValidation(t *testing.T) {
 
 		_, err := New(Config{
 			BaseURL:  "http://localhost:8080",
-			APIToken: "token",
+			Password: "test",
 		})
 
 		assert.NoError(t, err)
@@ -62,13 +41,13 @@ func isUnit(t *testing.T) {
 
 func accPreflghtCheck(t *testing.T) {
 	require.NotEmpty(t, os.Getenv("PIHOLE_URL"), "PIHOLE_URL must be set for acceptance tests")
-	require.NotEmpty(t, os.Getenv("PIHOLE_API_TOKEN"), "PIHOLE_API_TOKEN must be set for acceptance tests")
+	require.NotEmpty(t, os.Getenv("PIHOLE_PASSWORD"), "PIHOLE_PASSWORD must be set for acceptance tests")
 }
 
 func newTestClient(t *testing.T) *Client {
 	c, err := New(Config{
 		BaseURL:  os.Getenv("PIHOLE_URL"),
-		APIToken: os.Getenv("PIHOLE_API_TOKEN"),
+		Password: os.Getenv("PIHOLE_PASSWORD"),
 	})
 
 	require.NoError(t, err)

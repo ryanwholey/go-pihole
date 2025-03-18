@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:80/tcp"
     environment:
-      WEBPASSWORD: test
+      FTLCONF_webserver_api_password: test
     cap_add:
       - NET_ADMIN
     restart: unless-stopped
