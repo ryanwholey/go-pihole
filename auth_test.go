@@ -19,6 +19,8 @@ func TestAuth(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			isAcceptance(t)
+
 			c := newTestClient(t)
 
 			require.NoError(t, c.AuthAPI.Authenticate(context.TODO()))
