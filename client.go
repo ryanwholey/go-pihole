@@ -17,6 +17,7 @@ import (
 type Config struct {
 	BaseURL    string
 	Password   string
+	SessionID  string
 	HttpClient *http.Client
 	Headers    http.Header
 }
@@ -31,12 +32,11 @@ type Client struct {
 
 	LocalDNS   LocalDNS
 	LocalCNAME LocalCNAME
-	AuthAPI    AuthAPI
+	SessionAPI SessionAPI
 }
 
 type auth struct {
-	sid  string
-	csrf string
+	sid string
 }
 
 const (
@@ -73,9 +73,13 @@ func New(config Config) (*Client, error) {
 		},
 	}
 
-	client.AuthAPI = &authAPI{client: client}
+	if config.SessionID != "" {
+		client.auth.sid = config.SessionID
+	}
+
 	client.LocalDNS = &localDNS{client: client}
 	client.LocalCNAME = &localCNAME{client: client}
+	client.SessionAPI = &sessionAPI{client: client}
 
 	return client, nil
 }
@@ -101,7 +105,7 @@ func (c *Client) request(ctx context.Context, method string, path string, body i
 
 	if _, ok := c.publicEndpoints[fmt.Sprintf("%s %s", method, path)]; !ok {
 		if c.auth.sid == "" {
-			if err := c.AuthAPI.Authenticate(ctx); err != nil {
+			if _, err := c.SessionAPI.Login(ctx); err != nil {
 				return nil, err
 			}
 		}
