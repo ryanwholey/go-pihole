@@ -81,7 +81,7 @@ func (s *sessionAPI) Login(ctx context.Context) (Session, error) {
 
 // Post creates a session
 func (s *sessionAPI) Post(ctx context.Context) (Session, error) {
-	res, err := s.client.Post(ctx, "/api/auth", authRequest{
+	res, err := s.client.Post(ctx, "/api/auth", sessionRequest{
 		Password: s.client.password,
 	})
 	if err != nil {
