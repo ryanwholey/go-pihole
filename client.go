@@ -36,8 +36,7 @@ type Client struct {
 }
 
 type auth struct {
-	sid  string
-	csrf string
+	sid string
 }
 
 const (
