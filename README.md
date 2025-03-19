@@ -2,7 +2,7 @@
 
 A Golang Pi-hole client
 
-Requires Pi-hole FTL >= `v6`
+Requires Pi-hole Web Interface >= `6`. For <6, use tag <= v0.0.4
 
 ## Usage
 
