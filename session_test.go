@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuth(t *testing.T) {
+func TestSessionLogin(t *testing.T) {
 	tcs := []struct {
 		name string
 	}{
 		{
-			name: "Sets SID and CSRF on the client",
+			name: "Login SID on the client",
 		},
 	}
 
@@ -23,9 +23,9 @@ func TestAuth(t *testing.T) {
 
 			c := newTestClient(t)
 
-			require.NoError(t, c.AuthAPI.Authenticate(context.TODO()))
+			_, err := c.SessionAPI.Login(context.TODO())
+			require.NoError(t, err)
 
-			assert.NotEmpty(t, c.auth.csrf)
 			assert.NotEmpty(t, c.auth.sid)
 		})
 	}
