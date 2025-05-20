@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -29,6 +30,8 @@ type Client struct {
 	http            *http.Client
 	auth            auth
 	publicEndpoints map[string]bool
+
+	sessionLock sync.RWMutex
 
 	LocalDNS   LocalDNS
 	LocalCNAME LocalCNAME
@@ -100,16 +103,25 @@ func (c *Client) request(ctx context.Context, method string, path string, body i
 
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create req with context %s %s: %w", method, path, err)
 	}
 
 	if _, ok := c.publicEndpoints[fmt.Sprintf("%s %s", method, path)]; !ok {
-		if c.auth.sid == "" {
-			if _, err := c.SessionAPI.Login(ctx); err != nil {
-				return nil, err
+		c.sessionLock.RLock()
+		SID := c.auth.sid
+		c.sessionLock.RUnlock()
+
+		if SID == "" {
+			c.sessionLock.Lock()
+			defer c.sessionLock.Unlock()
+
+			// recheck client directly to make sure
+			if c.auth.sid == "" {
+				if _, err := c.SessionAPI.Login(ctx); err != nil {
+					return nil, fmt.Errorf("failed to login: %w", err)
+				}
 			}
 		}
-
 		req.Header[authHeader] = []string{c.auth.sid}
 	}
 
@@ -121,7 +133,12 @@ func (c *Client) request(ctx context.Context, method string, path string, body i
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	return c.http.Do(req)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request %s %s: %w", method, path, err)
+	}
+
+	return res, nil
 }
 
 func (c *Client) Get(ctx context.Context, path string) (*http.Response, error) {
@@ -140,7 +157,7 @@ func (c *Client) Delete(ctx context.Context, path string) (*http.Response, error
 	return c.request(ctx, http.MethodDelete, path, nil)
 }
 
-func (c Client) Request(ctx context.Context, vals url.Values) (*http.Request, error) {
+func (c *Client) Request(ctx context.Context, vals url.Values) (*http.Request, error) {
 	url := fmt.Sprintf("%s?%s", c.baseURL, vals.Encode())
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

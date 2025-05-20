@@ -34,6 +34,7 @@ func TestLocalCNAME(t *testing.T) {
 		isAcceptance(t)
 
 		c := newTestClient(t)
+		defer cleanupTestClient(c)
 
 		domain := fmt.Sprintf("test.%s", randomID())
 
@@ -53,6 +54,8 @@ func TestLocalCNAME(t *testing.T) {
 		isAcceptance(t)
 
 		c := newTestClient(t)
+		defer cleanupTestClient(c)
+
 		ctx := context.Background()
 
 		domain := fmt.Sprintf("test.%s", randomID())
