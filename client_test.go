@@ -1,6 +1,7 @@
 package pihole
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -62,4 +63,10 @@ func randomID() string {
 	}
 
 	return fmt.Sprintf("%X", b)
+}
+
+func cleanupTestClient(c *Client) {
+	if err := c.SessionAPI.Logout(context.TODO()); err != nil {
+		fmt.Printf("failed to clean up client after acceptance test: %s\n", err)
+	}
 }

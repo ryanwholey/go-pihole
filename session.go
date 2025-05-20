@@ -13,6 +13,7 @@ type SessionAPI interface {
 	Post(ctx context.Context) (Session, error)
 	Login(ctx context.Context) (Session, error)
 	Delete(ctx context.Context, sessionID string) error
+	Logout(ctx context.Context) error
 }
 
 type sessionAPI struct {
@@ -68,6 +69,7 @@ var (
 	ErrorSessionTooManyRequests = errors.New("too many session requests")
 )
 
+// Login posts a login request using the stored client config and stores the session ID on the client
 func (s *sessionAPI) Login(ctx context.Context) (Session, error) {
 	session, err := s.Post(ctx)
 	if err != nil {
@@ -77,6 +79,47 @@ func (s *sessionAPI) Login(ctx context.Context) (Session, error) {
 	s.client.auth.sid = session.SID
 
 	return session, nil
+}
+
+func (s *sessionAPI) Logout(ctx context.Context) error {
+	s.client.sessionLock.RLock()
+	SID := s.client.auth.sid
+	s.client.sessionLock.RUnlock()
+
+	if SID == "" {
+		return nil
+	}
+
+	err := s.logout(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to logout: %w", err)
+	}
+
+	s.client.sessionLock.Lock()
+	defer s.client.sessionLock.Unlock()
+
+	s.client.auth.sid = ""
+
+	return nil
+}
+
+func (s sessionAPI) logout(ctx context.Context) error {
+	res, err := s.client.Delete(ctx, "/api/auth/")
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	switch res.StatusCode {
+	case http.StatusNoContent:
+		return nil
+	case http.StatusNotFound:
+		return ErrorSessionNotFound
+	case http.StatusUnauthorized:
+		return ErrorSessionUnauthorized
+	default:
+		return fmt.Errorf("unexpected status code %d", res.StatusCode)
+	}
 }
 
 // Post creates a session
